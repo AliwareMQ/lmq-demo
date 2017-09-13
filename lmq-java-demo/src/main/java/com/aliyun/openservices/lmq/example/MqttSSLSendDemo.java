@@ -1,19 +1,12 @@
 package com.aliyun.openservices.lmq.example;
 
-import org.eclipse.paho.client.mqttv3.*;
-import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
-
-import javax.net.SocketFactory;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLSocketFactory;
-import javax.net.ssl.TrustManagerFactory;
-import java.io.BufferedInputStream;
-import java.io.InputStream;
-import java.security.KeyStore;
-import java.security.cert.Certificate;
-import java.security.cert.CertificateException;
-import java.security.cert.CertificateFactory;
 import java.util.Properties;
+import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken;
+import org.eclipse.paho.client.mqttv3.MqttCallbackExtended;
+import org.eclipse.paho.client.mqttv3.MqttClient;
+import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
+import org.eclipse.paho.client.mqttv3.MqttMessage;
+import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 
 /**
  * Created by alvin on 17-7-24.
@@ -40,10 +33,12 @@ public class MqttSSLSendDemo {
         connOpts.setCleanSession(cleanSession);
         connOpts.setKeepAliveInterval(90);
         connOpts.setAutomaticReconnect(true);
-        //use ssl socket
-        SocketFactory socketFactory = initSSLSocket("intermedia.crt");
-        connOpts.setSocketFactory(socketFactory);
-        mqttClient.setCallback(new MqttCallback() {
+        mqttClient.setCallback(new MqttCallbackExtended() {
+            @Override
+            public void connectComplete(boolean reconnect, String serverURI) {
+                System.out.println("connect success");
+            }
+
             @Override
             public void connectionLost(Throwable throwable) {
                 throwable.printStackTrace();
@@ -72,29 +67,5 @@ public class MqttSSLSendDemo {
             }
             Thread.sleep(1000);
         }
-    }
-
-    private static SSLSocketFactory initSSLSocket(String certFileName) throws Exception {
-        InputStream caInput = new BufferedInputStream(ClassLoader.getSystemResourceAsStream(certFileName));
-        CertificateFactory cf = CertificateFactory.getInstance("X.509");
-        Certificate ca = null;
-        try {
-            ca = cf.generateCertificate(caInput);
-        } catch (CertificateException e) {
-            e.printStackTrace();
-        } finally {
-            caInput.close();
-        }
-        String keyStoreType = KeyStore.getDefaultType();
-        KeyStore keyStore = KeyStore.getInstance(keyStoreType);
-        keyStore.load(null, null);
-        keyStore.setCertificateEntry("ca", ca);
-        String tmfAlgorithm = TrustManagerFactory.getDefaultAlgorithm();
-        TrustManagerFactory tmf = TrustManagerFactory.getInstance(tmfAlgorithm);
-        tmf.init(keyStore);
-        SSLContext context = SSLContext.getInstance("TLSV1.2");
-        context.init(null, tmf.getTrustManagers(), null);
-        SSLSocketFactory socketFactory = context.getSocketFactory();
-        return socketFactory;
     }
 }

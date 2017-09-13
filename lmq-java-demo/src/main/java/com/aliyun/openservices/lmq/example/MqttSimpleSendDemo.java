@@ -30,7 +30,12 @@ public class MqttSimpleSendDemo {
         connOpts.setCleanSession(cleanSession);
         connOpts.setKeepAliveInterval(90);
         connOpts.setAutomaticReconnect(true);
-        mqttClient.setCallback(new MqttCallback() {
+        mqttClient.setCallback(new MqttCallbackExtended() {
+            @Override
+            public void connectComplete(boolean reconnect, String serverURI) {
+                System.out.println("connect success");
+            }
+
             @Override
             public void connectionLost(Throwable throwable) {
                 throwable.printStackTrace();
