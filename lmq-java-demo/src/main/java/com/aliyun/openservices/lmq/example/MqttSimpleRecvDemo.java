@@ -10,7 +10,7 @@ import org.eclipse.paho.client.mqttv3.MqttMessage;
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 
 /**
- * Created by alvin on 17-7-24. This is simple example for mqtt java client receive mqtt msg
+ * Created by alvin on 17-7-24. This is simple example for mqtt sync java client receive mqtt msg
  */
 public class MqttSimpleRecvDemo {
     public static void main(String[] args) throws Exception {

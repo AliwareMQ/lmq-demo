@@ -1,15 +1,17 @@
 package com.aliyun.openservices.lmq.example;
 
-import org.eclipse.paho.client.mqttv3.*;
+import java.util.Properties;
+import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken;
+import org.eclipse.paho.client.mqttv3.MqttAsyncClient;
+import org.eclipse.paho.client.mqttv3.MqttCallbackExtended;
+import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
+import org.eclipse.paho.client.mqttv3.MqttMessage;
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 
-import java.util.Properties;
-
 /**
- * Created by alvin on 17-7-24.
- * This is simple example for mqtt sync java client send mqtt msg
+ * Created by alvin on 17-7-24. This is simple example for mqtt sync java client send mqtt msg
  */
-public class MqttSimpleSendDemo {
+public class MqttAsyncSimpleSendDemo {
     public static void main(String[] args) throws Exception {
         Properties properties = Tools.loadProperties();
         final String brokerUrl = properties.getProperty("brokerUrl");
@@ -21,7 +23,7 @@ public class MqttSimpleSendDemo {
         String accessKey = properties.getProperty("accessKey");
         String secretKey = properties.getProperty("secretKey");
         final MemoryPersistence memoryPersistence = new MemoryPersistence();
-        final MqttClient mqttClient = new MqttClient(brokerUrl, clientId, memoryPersistence);
+        final MqttAsyncClient mqttAsyncClient = new MqttAsyncClient(brokerUrl, clientId, memoryPersistence);
         MqttConnectOptions connOpts = new MqttConnectOptions();
         //cal the sign as password,sign=BASE64(MAC.SHA1(groupId,secretKey))
         String sign = Tools.macSignature(clientId.split("@@@")[0], secretKey);
@@ -30,7 +32,7 @@ public class MqttSimpleSendDemo {
         connOpts.setCleanSession(cleanSession);
         connOpts.setKeepAliveInterval(90);
         connOpts.setAutomaticReconnect(true);
-        mqttClient.setCallback(new MqttCallbackExtended() {
+        mqttAsyncClient.setCallback(new MqttCallbackExtended() {
             @Override
             public void connectComplete(boolean reconnect, String serverURI) {
                 System.out.println("connect success");
@@ -51,21 +53,17 @@ public class MqttSimpleSendDemo {
                 System.out.println("send msg succeed");
             }
         });
-        mqttClient.connect(connOpts);
+        //this is sync invoke wait complete
+        mqttAsyncClient.connect(connOpts).waitForCompletion();
         while (true) {
-            try{
-                //sync send normal pub sub msg
+            try {
+                //async send normal pub sub msg
                 final String mqttSendTopic = topic + "/qos" + qosLevel;
                 MqttMessage message = new MqttMessage("hello lmq pub sub msg".getBytes());
                 message.setQos(qosLevel);
-                mqttClient.publish(mqttSendTopic, message);
-                //sync send p2p msg,the topic like parentTopic/p2p/{{targetClientId}}
-                String recvClientId = groupId + "@@@RECV0001";
-                final String p2pSendTopic = topic + "/p2p/" + recvClientId;
-                message = new MqttMessage("hello lmq p2p msg".getBytes());
-                message.setQos(qosLevel);
-                mqttClient.publish(p2pSendTopic, message);
-            }catch (Exception e){
+                //this is async invoke ,doesn't care the complete token
+                IMqttDeliveryToken token = mqttAsyncClient.publish(mqttSendTopic, message);
+            } catch (Exception e) {
                 e.printStackTrace();
             }
             Thread.sleep(1000);
