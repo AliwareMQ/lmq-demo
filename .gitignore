@@ -5,7 +5,10 @@
 *target
 # Log file
 *.log
-
+*.cmake
+CMakeCache.*
+CMakeFiles*
+Makefile
 # BlueJ files
 *.ctxt
 
