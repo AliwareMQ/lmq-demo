@@ -23,7 +23,7 @@ public class MqSendMqttDemo {
         initProperties.put(PropertyKeyConst.ProducerId, producerId);
         initProperties.put(PropertyKeyConst.AccessKey, accessKey);
         initProperties.put(PropertyKeyConst.SecretKey, secretKey);
-        Producer producer = ONSFactory.createProducer(properties);
+        Producer producer = ONSFactory.createProducer(initProperties);
         producer.start();
         final Message msg = new Message(
                 topic,//the topic is mqtt parent topic

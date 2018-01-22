@@ -19,7 +19,7 @@ public class MqRecvMqttDemo {
         initProperties.put(PropertyKeyConst.ConsumerId, consumerId);
         initProperties.put(PropertyKeyConst.AccessKey, accessKey);
         initProperties.put(PropertyKeyConst.SecretKey, secretKey);
-        Consumer consumer = ONSFactory.createConsumer(properties);
+        Consumer consumer = ONSFactory.createConsumer(initProperties);
         //mq client recv mqtt msg ,just subscribe the parent topic
         consumer.subscribe(topic, "*", new MessageListener() {
             public Action consume(Message message, ConsumeContext consumeContext) {
