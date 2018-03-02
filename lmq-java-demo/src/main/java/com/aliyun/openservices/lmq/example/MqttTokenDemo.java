@@ -57,6 +57,7 @@ public class MqttTokenDemo {
 
             @Override
             public void deliveryComplete(IMqttDeliveryToken iMqttDeliveryToken) {
+                //this notice make sense when qos >0
                 System.out.println("deliveryComplete:" + iMqttDeliveryToken.getMessageId());
             }
         });

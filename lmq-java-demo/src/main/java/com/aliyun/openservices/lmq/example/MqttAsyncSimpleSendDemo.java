@@ -50,6 +50,7 @@ public class MqttAsyncSimpleSendDemo {
 
             @Override
             public void deliveryComplete(IMqttDeliveryToken iMqttDeliveryToken) {
+                //this notice make sense when qos >0
                 System.out.println("send msg succeed");
             }
         });
