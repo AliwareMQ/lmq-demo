@@ -29,6 +29,8 @@ int messageDeliveryComplete(void *context, MQTTAsync_token token) {
 int messageArrived(void *context, char *topicName, int topicLen, MQTTAsync_message *m) {
     /* not expecting any messages */
     printf("recv message from %s ,body is %s\n", topicName, (char *) m->payload);
+    MQTTAsync_freeMessage(&m);
+    MQTTAsync_free(topicName);
     return 1;
 }
 
