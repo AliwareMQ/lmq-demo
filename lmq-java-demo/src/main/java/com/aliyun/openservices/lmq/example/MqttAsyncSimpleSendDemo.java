@@ -8,6 +8,8 @@ import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 
+import static org.eclipse.paho.client.mqttv3.MqttConnectOptions.MQTT_VERSION_3_1_1;
+
 /**
  * Created by alvin on 17-7-24. This is simple example for mqtt async java client send mqtt msg
  */
@@ -32,6 +34,7 @@ public class MqttAsyncSimpleSendDemo {
         connOpts.setCleanSession(cleanSession);
         connOpts.setKeepAliveInterval(90);
         connOpts.setAutomaticReconnect(true);
+        connOpts.setMqttVersion(MQTT_VERSION_3_1_1);
         mqttAsyncClient.setCallback(new MqttCallbackExtended() {
             @Override
             public void connectComplete(boolean reconnect, String serverURI) {

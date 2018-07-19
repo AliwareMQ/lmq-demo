@@ -80,7 +80,8 @@ void connectionLost(void *context, char *cause) {
     int rc = 0;
 
     printf("Connecting\n");
-    conn_opts.keepAliveInterval = 10;
+    conn_opts.MQTTVersion = MQTTVERSION_3_1_1;
+    conn_opts.keepAliveInterval = 60;
     conn_opts.cleansession = 1;
     conn_opts.username = userName;
     conn_opts.password = passWord;
@@ -129,7 +130,8 @@ int main(int argc, char **argv) {
     rc = MQTTAsync_setCallbacks(client, client, connectionLost, messageArrived, NULL);
     //2.connect to server
     MQTTAsync_connectOptions conn_opts = MQTTAsync_connectOptions_initializer;
-    conn_opts.keepAliveInterval = 90;
+    conn_opts.MQTTVersion = MQTTVERSION_3_1_1;
+    conn_opts.keepAliveInterval = 60;
     conn_opts.cleansession = cleanSession;
     conn_opts.username = userName;
     conn_opts.password = passWord;

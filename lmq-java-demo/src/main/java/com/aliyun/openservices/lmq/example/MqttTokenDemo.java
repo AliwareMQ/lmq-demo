@@ -1,6 +1,7 @@
 package com.aliyun.openservices.lmq.example;
 
 import com.alibaba.fastjson.JSONObject;
+import java.util.Properties;
 import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken;
 import org.eclipse.paho.client.mqttv3.MqttCallbackExtended;
 import org.eclipse.paho.client.mqttv3.MqttClient;
@@ -11,18 +12,22 @@ import org.eclipse.paho.client.mqttv3.MqttMessage;
 import org.eclipse.paho.client.mqttv3.MqttTopic;
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 
+import static org.eclipse.paho.client.mqttv3.MqttConnectOptions.MQTT_VERSION_3_1_1;
+
 public class MqttTokenDemo {
     public static void main(String[] args) throws MqttException, InterruptedException {
-        String broker = "tcp://XXXX:1883";
-        String clientId = "GID_XXX@@@XXXX";
-        final String topic = "XXXX/XXXXX";
+        Properties properties = Tools.loadProperties();
+        final String broker = properties.getProperty("brokerUrl");
+        final String groupId = properties.getProperty("groupId");
+        final String topic = properties.getProperty("topic");
         MemoryPersistence persistence = new MemoryPersistence();
-        final MqttClient sampleClient = new MqttClient(broker, clientId, persistence);
+        final MqttClient sampleClient = new MqttClient(broker, groupId + "@@@TokenTest0001", persistence);
         final MqttConnectOptions connOpts = new MqttConnectOptions();
         System.out.println("Connecting to broker: " + broker);
         connOpts.setServerURIs(new String[] {broker});
         connOpts.setCleanSession(true);
         connOpts.setKeepAliveInterval(90);
+        connOpts.setMqttVersion(MQTT_VERSION_3_1_1);
         sampleClient.setCallback(new MqttCallbackExtended() {
             @Override
             public void connectComplete(boolean reconnect, String serverURI) {
