@@ -1,6 +1,10 @@
 package com.aliyun.openservices.lmq.example;
 
 import java.util.Properties;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken;
 import org.eclipse.paho.client.mqttv3.MqttCallbackExtended;
 import org.eclipse.paho.client.mqttv3.MqttClient;
@@ -36,18 +40,25 @@ public class MqttSimpleRecvDemo {
         connOpts.setKeepAliveInterval(90);
         connOpts.setAutomaticReconnect(true);
         connOpts.setMqttVersion(MQTT_VERSION_3_1_1);
+        final ExecutorService executorService = new ThreadPoolExecutor(1, 1, 0, TimeUnit.MILLISECONDS,
+            new LinkedBlockingQueue<Runnable>());
         mqttClient.setCallback(new MqttCallbackExtended() {
             @Override
             public void connectComplete(boolean reconnect, String serverURI) {
                 //when connect success,do sub topic
                 System.out.println("connect success");
-                try {
-                    final String topicFilter[] = {topic + "/qos" + qosLevel};
-                    final int[] qos = {qosLevel};
-                    mqttClient.subscribe(topicFilter, qos);
-                } catch (MqttException e) {
-                    e.printStackTrace();
-                }
+                executorService.submit(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            final String topicFilter[] = {topic + "/qos" + qosLevel};
+                            final int[] qos = {qosLevel};
+                            mqttClient.subscribe(topicFilter, qos);
+                        } catch (MqttException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                });
             }
 
             @Override
@@ -57,7 +68,8 @@ public class MqttSimpleRecvDemo {
 
             @Override
             public void messageArrived(String s, MqttMessage mqttMessage) throws Exception {
-                System.out.println("receive msg from topic " + s + " , body is " + new String(mqttMessage.getPayload()));
+                System.out.println(
+                    "receive msg from topic " + s + " , body is " + new String(mqttMessage.getPayload()));
             }
 
             @Override

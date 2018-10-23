@@ -2,6 +2,11 @@ package com.aliyun.openservices.lmq.example;
 
 import com.alibaba.fastjson.JSONObject;
 import java.util.Properties;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken;
 import org.eclipse.paho.client.mqttv3.MqttCallbackExtended;
 import org.eclipse.paho.client.mqttv3.MqttClient;
@@ -17,32 +22,40 @@ import static org.eclipse.paho.client.mqttv3.MqttConnectOptions.MQTT_VERSION_3_1
 public class MqttTokenDemo {
     public static void main(String[] args) throws MqttException, InterruptedException {
         Properties properties = Tools.loadProperties();
-        final String broker = properties.getProperty("brokerUrl");
-        final String groupId = properties.getProperty("groupId");
-        final String topic = properties.getProperty("topic");
+        final String broker = "tcp://127.0.0.1:1883";
+        final String groupId = "GID_LMQUT_BJ";
+        final String topic = "LMQUT_BJ";
         MemoryPersistence persistence = new MemoryPersistence();
         final MqttClient sampleClient = new MqttClient(broker, groupId + "@@@TokenTest0001", persistence);
         final MqttConnectOptions connOpts = new MqttConnectOptions();
         System.out.println("Connecting to broker: " + broker);
         connOpts.setServerURIs(new String[] {broker});
         connOpts.setCleanSession(true);
-        connOpts.setKeepAliveInterval(90);
+        connOpts.setKeepAliveInterval(10);
         connOpts.setMqttVersion(MQTT_VERSION_3_1_1);
+        connOpts.setAutomaticReconnect(true);
+        final ExecutorService executorService = new ThreadPoolExecutor(1, 1, 0, TimeUnit.MILLISECONDS,
+            new LinkedBlockingQueue<Runnable>());
         sampleClient.setCallback(new MqttCallbackExtended() {
             @Override
             public void connectComplete(boolean reconnect, String serverURI) {
-                //when connect success ,need upload token first
-                JSONObject object = new JSONObject();
-                object.put("token", "XXXX");//body of token
-                object.put("type", "RW");//type of token ,like RW，R，W
-                MqttMessage message = new MqttMessage(object.toJSONString().getBytes());
-                message.setQos(1);
-                try {
-                    sampleClient.publish("$SYS/uploadToken", message);
-                    sampleClient.subscribe(topic, 0);
-                } catch (MqttException e) {
-                    e.printStackTrace();
-                }
+                executorService.submit(new Runnable() {
+                    @Override
+                    public void run() {
+                        JSONObject object = new JSONObject();
+                        object.put("token", "XXXX");//body of token
+                        object.put("type", "RW");//type of token ,like RW，R，W
+                        MqttMessage message = new MqttMessage(object.toJSONString().getBytes());
+                        message.setQos(1);
+                        try {
+                            sampleClient.publish("$SYS/uploadToken", message);
+                            sampleClient.subscribe(topic, 0);
+                        } catch (MqttException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                });
+                System.out.println("connect complete");
             }
 
             @Override
@@ -76,9 +89,7 @@ public class MqttTokenDemo {
         MqttDeliveryToken token = pubTopic.publish(message);
         token.waitForCompletion();//sync wait
         //Token upload ok , do normal sub and pub
-        sampleClient.subscribe(topic, 0);
         while (true) {
-            sampleClient.publish(topic, message);
             Thread.sleep(5000);
         }
     }
