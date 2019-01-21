@@ -1,4 +1,4 @@
-package com.aliyun.openservices.lmq.example;
+package com.aliyun.openservices.lmq.example.util;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
