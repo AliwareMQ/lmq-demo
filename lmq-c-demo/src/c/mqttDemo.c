@@ -99,24 +99,39 @@ void connectionLost(void *context, char *cause) {
 int main(int argc, char **argv) {
     MQTTAsync_disconnectOptions disc_opts = MQTTAsync_disconnectOptions_initializer;
     MQTTAsync client;
+    //实例 ID，购买后从控制台获取
+    char * instanceId = "XXXX";
+    //测试收发消息的 Topic
     topic = "XXXX";
-    char *host = "XXX.mqtt.aliyuncs.com";
-    char *groupId = "GID_XXXXX";
-    char *deviceId = "XXXXX";
-    char *accessKey = "XXXXX";
-    char *secretKey = "XXXXX";
+    //接入点域名，从控制台获取
+    char *host = "XXXX.mqtt.aliyuncs.com";
+    //客户端使用的 GroupID，从控制台申请
+    char *groupId = "GID_XXXX";
+    //客户端 ClientID 的后缀，由业务自行指定，只需要保证全局唯一即可
+    char *deviceId = "XXXX";
+    //账号 AccessKey，从账号控制台获取
+    char *accessKey = "XXXX";
+    //账号 SecretKey，从账号控制台获取
+    char *secretKey = "XXXX";
+    //使用的协议端口，默认 tcp 协议使用1883
     int port = 1883;
     int qos = 0;
     int cleanSession = 1;
     int rc = 0;
     char tempData[100];
     int len = 0;
-    HMAC(EVP_sha1(), secretKey, strlen(secretKey), groupId, strlen(groupId), tempData, &len);
+    //ClientID要求使用 GroupId 和 DeviceId 拼接而成，长度不得超过64个字符
+    char clientIdUrl[64];
+    sprintf(clientIdUrl, "%s@@@%s", groupId, deviceId);
+    //username和 Password 签名模式下的设置方法，参考文档 https://help.aliyun.com/document_detail/48271.html?spm=a2c4g.11186623.6.553.217831c3BSFry7
+    HMAC(EVP_sha1(), secretKey, strlen(secretKey), clientIdUrl, strlen(clientIdUrl), tempData, &len);
     char resultData[100];
     int passWordLen = EVP_EncodeBlock((unsigned char *) resultData, tempData, len);
     resultData[passWordLen] = '\0';
     printf("passWord is %s", resultData);
-    userName = accessKey;
+    char userNameData[128];
+    sprintf(userNameData,"Signature|%s|%s", accessKey, instanceId);
+    userName = userNameData;
     passWord = resultData;
     //1.create client
     MQTTAsync_createOptions create_opts = MQTTAsync_createOptions_initializer;
@@ -124,8 +139,6 @@ int main(int argc, char **argv) {
     create_opts.maxBufferedMessages = 10;
     char url[100];
     sprintf(url, "%s:%d", host, port);
-    char clientIdUrl[64];
-    sprintf(clientIdUrl, "%s@@@%s", groupId, deviceId);
     rc = MQTTAsync_createWithOptions(&client, url, clientIdUrl, MQTTCLIENT_PERSISTENCE_NONE, NULL, &create_opts);
     rc = MQTTAsync_setCallbacks(client, client, connectionLost, messageArrived, NULL);
     //2.connect to server
