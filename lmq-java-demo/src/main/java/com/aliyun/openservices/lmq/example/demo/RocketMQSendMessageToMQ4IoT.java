@@ -153,9 +153,16 @@ public class RocketMQSendMessageToMQ4IoT {
             /**
              * 使用 RocketMQ 客户端发消息给 MQ4IoT客户端时，可以通过mqttSecondTopic属性设置 MQ4IoT的子级 topic 属性
              * 其他参数例如 QoS， CleanSession 参数等都可以设置，具体可以参考文档https://help.aliyun.com/document_detail/94521.html?spm=a2c4g.11186623.6.543.694f78717ugCj1
+             *
              */
             msg.putUserProperties(PropertyKeyConst.MqttSecondTopic, subTopic);
             SendResult result = producer.send(msg);
+            System.out.println(result);
+            /**
+             * 发送 P2P 消息时，子级 topic如下设置， 具体参考https://help.aliyun.com/document_detail/96176.html?spm=a2c4g.11186623.6.565.10ac1cf7NKGfjI
+             */
+            msg.putUserProperties(PropertyKeyConst.MqttSecondTopic, "/p2p/" + clientId);
+            result = producer.send(msg);
             System.out.println(result);
         }
         Thread.sleep(Long.MAX_VALUE);
