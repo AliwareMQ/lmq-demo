@@ -16,6 +16,7 @@
 
 
 volatile int connected = 0;
+bool useSSL = false;
 char *topic;
 char *userName;
 char *passWord;
@@ -88,7 +89,12 @@ void connectionLost(void *context, char *cause) {
     conn_opts.onSuccess = onConnect;
     conn_opts.onFailure = onConnectFailure;
     conn_opts.context = client;
-    conn_opts.ssl = NULL;
+    if (useSSL) {
+        MQTTAsync_SSLOptions ssl =MQTTAsync_SSLOptions_initializer;
+        conn_opts.ssl = &ssl;
+    } else {
+        conn_opts.ssl = NULL;
+    }
     if ((rc = MQTTAsync_connect(client, &conn_opts)) != MQTTASYNC_SUCCESS) {
         printf("Failed to start connect, return code %d\n", rc);
         exit(EXIT_FAILURE);
@@ -115,7 +121,6 @@ int main(int argc, char **argv) {
     char *secretKey = "XXXX";
     //使用的协议端口，默认 tcp 协议使用1883，如果需要使用 SSL 加密，端口设置成8883，具体协议和端口参考文档链接https://help.aliyun.com/document_detail/44867.html?spm=a2c4g.11186623.6.547.38d81cf7XRnP0C
     int port = 1883;
-    bool useSSL = false;
     int qos = 0;
     int cleanSession = 1;
     int rc = 0;
