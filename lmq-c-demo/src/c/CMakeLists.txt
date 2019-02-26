@@ -15,4 +15,4 @@ set(CMAKE_C_STANDARD 99)
 
 add_executable(mqttDemo mqttDemo.c)
 TARGET_LINK_LIBRARIES(mqttDemo crypto)
-TARGET_LINK_LIBRARIES(mqttDemo paho-mqtt3a)
+TARGET_LINK_LIBRARIES(mqttDemo paho-mqtt3as)

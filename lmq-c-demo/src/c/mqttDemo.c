@@ -113,8 +113,9 @@ int main(int argc, char **argv) {
     char *accessKey = "XXXX";
     //账号 SecretKey，从账号控制台获取
     char *secretKey = "XXXX";
-    //使用的协议端口，默认 tcp 协议使用1883
+    //使用的协议端口，默认 tcp 协议使用1883，如果需要使用 SSL 加密，端口设置成8883，具体协议和端口参考文档链接https://help.aliyun.com/document_detail/44867.html?spm=a2c4g.11186623.6.547.38d81cf7XRnP0C
     int port = 1883;
+    bool useSSL = false;
     int qos = 0;
     int cleanSession = 1;
     int rc = 0;
@@ -138,7 +139,11 @@ int main(int argc, char **argv) {
     create_opts.sendWhileDisconnected = 0;
     create_opts.maxBufferedMessages = 10;
     char url[100];
-    sprintf(url, "%s:%d", host, port);
+    if (useSSL) {
+        sprintf(url, "ssl://%s:%d", host, port);
+    } else {
+        sprintf(url, "tcp://%s:%d", host, port);
+    }
     rc = MQTTAsync_createWithOptions(&client, url, clientIdUrl, MQTTCLIENT_PERSISTENCE_NONE, NULL, &create_opts);
     rc = MQTTAsync_setCallbacks(client, client, connectionLost, messageArrived, NULL);
     //2.connect to server
@@ -151,7 +156,13 @@ int main(int argc, char **argv) {
     conn_opts.onSuccess = onConnect;
     conn_opts.onFailure = onConnectFailure;
     conn_opts.context = client;
-    conn_opts.ssl = NULL;
+    //如果需要使用 SSL 加密
+    if (useSSL) {
+        MQTTAsync_SSLOptions ssl =MQTTAsync_SSLOptions_initializer;
+        conn_opts.ssl = &ssl;
+    } else {
+        conn_opts.ssl = NULL;
+    }
     conn_opts.automaticReconnect = 1;
     conn_opts.connectTimeout = 3;
     if ((rc = MQTTAsync_connect(client, &conn_opts)) != MQTTASYNC_SUCCESS) {
