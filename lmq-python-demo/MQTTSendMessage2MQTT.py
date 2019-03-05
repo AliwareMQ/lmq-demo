@@ -57,6 +57,8 @@ client.on_disconnect = on_disconnect
 userName ='Signature'+'|'+accessKey+'|'+instanceId;
 password = base64.b64encode(hmac.new(secretKey.encode(), client_id.encode(), sha1).digest()).decode()
 client.username_pw_set(userName, password)
+# ssl设置，并且port=8883
+#client.tls_set(ca_certs=None, certfile=None, keyfile=None, cert_reqs=ssl.CERT_REQUIRED, tls_version=ssl.PROTOCOL_TLS, ciphers=None)
 client.connect(brokerUrl, 1883, 60)
 client.subscribe(topic, 0)
 for i in range(1, 11):
