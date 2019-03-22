@@ -47,6 +47,7 @@ void onSubcribe(void *context, MQTTAsync_successData *response) {
 
 void onConnect(void *context, MQTTAsync_successData *response) {
     connected = 1;
+    //连接成功的回调，只会在第一次 connect 成功后调用，后续自动重连成功时并不会调用，因此应用需要自行保证每次 connect 成功后重新订阅
     printf("connect success \n");
     MQTTAsync client = (MQTTAsync) context;
     //do sub when connect success
@@ -76,29 +77,7 @@ void onPublish(void *context, MQTTAsync_successData *response) {
 
 void connectionLost(void *context, char *cause) {
     connected = 0;
-    MQTTAsync client = (MQTTAsync) context;
-    MQTTAsync_connectOptions conn_opts = MQTTAsync_connectOptions_initializer;
-    int rc = 0;
-
-    printf("Connecting\n");
-    conn_opts.MQTTVersion = MQTTVERSION_3_1_1;
-    conn_opts.keepAliveInterval = 60;
-    conn_opts.cleansession = 1;
-    conn_opts.username = userName;
-    conn_opts.password = passWord;
-    conn_opts.onSuccess = onConnect;
-    conn_opts.onFailure = onConnectFailure;
-    conn_opts.context = client;
-    if (useSSL) {
-        MQTTAsync_SSLOptions ssl =MQTTAsync_SSLOptions_initializer;
-        conn_opts.ssl = &ssl;
-    } else {
-        conn_opts.ssl = NULL;
-    }
-    if ((rc = MQTTAsync_connect(client, &conn_opts)) != MQTTASYNC_SUCCESS) {
-        printf("Failed to start connect, return code %d\n", rc);
-        exit(EXIT_FAILURE);
-    }
+    printf("connection lost\n");
 }
 
 
