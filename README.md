@@ -18,7 +18,7 @@
 |C| Eclipse Paho C SDK|https://eclipse.org/paho/clients/c/|
 |C#| Eclipse Paho C# SDK|https://github.com/eclipse/paho.mqtt.m2mqtt|
 |Go|Eclipse Paho Go SDK|https://github.com/eclipse/paho.mqtt.golang|
-
+|Nodejs|MQTT JS|https://github.com/mqttjs/MQTT.js|
 其他语言的客户端 SDK 如 PHP 等暂时没有提供测试。如有需要可以访问 https://github.com/mqtt/mqtt.github.io/wiki/libraries 进行下载。
 
 本代码仓库仅提供示例方法和 Demo 片段，部分开发语言需要的工程框架和 IDE 配置不会提供，因此使用时请自行移植。

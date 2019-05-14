@@ -1,5 +1,5 @@
-// 开源sdk地址：https://github.com/mqttjs/MQTT.js
 
+// 开源sdk地址：https://github.com/mqttjs/MQTT.js
 var mqtt = require('mqtt')
 var CryptoJS = require("crypto-js");
 
