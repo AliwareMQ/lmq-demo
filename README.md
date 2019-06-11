@@ -19,6 +19,7 @@
 |C#| Eclipse Paho C# SDK|https://github.com/eclipse/paho.mqtt.m2mqtt|
 |Go|Eclipse Paho Go SDK|https://github.com/eclipse/paho.mqtt.golang|
 |Nodejs|MQTT JS|https://github.com/mqttjs/MQTT.js|
+|PHP|Mosquitto-PHP|https://github.com/mgdm/Mosquitto-PHP|
 
 其他语言的客户端 SDK 如 PHP 等暂时没有提供测试。如有需要可以访问 https://github.com/mqtt/mqtt.github.io/wiki/libraries 进行下载。
 

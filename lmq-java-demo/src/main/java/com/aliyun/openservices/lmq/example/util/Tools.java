@@ -52,12 +52,13 @@ public class Tools {
      * 计算签名，参数分别是参数对以及密钥
      *
      * @param requestParams 参数对，即参与计算签名的参数
-     * @param secretKey     密钥
+     * @param secretKey 密钥
      * @return 签名字符串
      * @throws NoSuchAlgorithmException
      * @throws InvalidKeyException
      */
-    public static String doHttpSignature(Map<String, String> requestParams, String secretKey) throws NoSuchAlgorithmException, InvalidKeyException {
+    public static String doHttpSignature(Map<String, String> requestParams,
+        String secretKey) throws NoSuchAlgorithmException, InvalidKeyException {
         List<String> paramList = new ArrayList<String>();
         for (Map.Entry<String, String> entry : requestParams.entrySet()) {
             paramList.add(entry.getKey() + "=" + entry.getValue());
@@ -74,13 +75,14 @@ public class Tools {
     }
 
     /**
-     * @param text      要签名的文本
+     * @param text 要签名的文本
      * @param secretKey 阿里云MQ secretKey
      * @return 加密后的字符串
      * @throws InvalidKeyException
      * @throws NoSuchAlgorithmException
      */
-    public static String macSignature(String text, String secretKey) throws InvalidKeyException, NoSuchAlgorithmException {
+    public static String macSignature(String text,
+        String secretKey) throws InvalidKeyException, NoSuchAlgorithmException {
         Charset charset = Charset.forName("UTF-8");
         String algorithm = "HmacSHA1";
         Mac mac = Mac.getInstance(algorithm);
@@ -91,12 +93,6 @@ public class Tools {
 
     /**
      * 创建HTTPS 客户端
-     *
-     * @return 单例模式的客户端
-     * @throws KeyStoreException
-     * @throws UnrecoverableKeyException
-     * @throws NoSuchAlgorithmException
-     * @throws KeyManagementException
      */
     private static HttpClient httpClient = null;
 
@@ -107,25 +103,25 @@ public class Tools {
         X509TrustManager xtm = new X509TrustManager() {
             @Override
             public void checkClientTrusted(X509Certificate[] arg0, String arg1)
-                    throws CertificateException {
+                throws CertificateException {
             }
 
             @Override
             public void checkServerTrusted(X509Certificate[] arg0, String arg1)
-                    throws CertificateException {
+                throws CertificateException {
             }
 
             @Override
             public X509Certificate[] getAcceptedIssuers() {
-                return new X509Certificate[]{};
+                return new X509Certificate[] {};
             }
         };
         SSLContext context = SSLContext.getInstance("TLS");
-        context.init(null, new TrustManager[]{xtm}, null);
+        context.init(null, new TrustManager[] {xtm}, null);
         SSLConnectionSocketFactory scsf = new SSLConnectionSocketFactory(context, NoopHostnameVerifier.INSTANCE);
         Registry<ConnectionSocketFactory> sfr = RegistryBuilder.<ConnectionSocketFactory>create()
-                .register("http", PlainConnectionSocketFactory.INSTANCE)
-                .register("https", scsf).build();
+            .register("http", PlainConnectionSocketFactory.INSTANCE)
+            .register("https", scsf).build();
         PoolingHttpClientConnectionManager pcm = new PoolingHttpClientConnectionManager(sfr);
         httpClient = HttpClientBuilder.create().setConnectionManager(pcm).build();
         return httpClient;
@@ -135,25 +131,25 @@ public class Tools {
         X509TrustManager xtm = new X509TrustManager() {
             @Override
             public void checkClientTrusted(X509Certificate[] arg0, String arg1)
-                    throws CertificateException {
+                throws CertificateException {
             }
 
             @Override
             public void checkServerTrusted(X509Certificate[] arg0, String arg1)
-                    throws CertificateException {
+                throws CertificateException {
             }
 
             @Override
             public X509Certificate[] getAcceptedIssuers() {
-                return new X509Certificate[]{};
+                return new X509Certificate[] {};
             }
         };
         SSLContext context = SSLContext.getInstance("TLS");
-        context.init(null, new TrustManager[]{xtm}, null);
+        context.init(null, new TrustManager[] {xtm}, null);
         SSLConnectionSocketFactory scsf = new SSLConnectionSocketFactory(context, NoopHostnameVerifier.INSTANCE);
         Registry<ConnectionSocketFactory> sfr = RegistryBuilder.<ConnectionSocketFactory>create()
-                .register("http", PlainConnectionSocketFactory.INSTANCE)
-                .register("https", scsf).build();
+            .register("http", PlainConnectionSocketFactory.INSTANCE)
+            .register("https", scsf).build();
         PoolingHttpClientConnectionManager pcm = new PoolingHttpClientConnectionManager(sfr);
         return HttpClientBuilder.create().setConnectionManager(pcm).build();
     }
@@ -161,7 +157,7 @@ public class Tools {
     /**
      * 发起Https Get请求，并得到返回的JSON响应
      *
-     * @param url    接口Url
+     * @param url 接口Url
      * @param params 参数u对
      * @return
      * @throws IOException
@@ -170,7 +166,8 @@ public class Tools {
      * @throws NoSuchAlgorithmException
      * @throws KeyManagementException
      */
-    public static JSONObject httpsGet(String url, Map<String, String> params) throws IOException, KeyStoreException, UnrecoverableKeyException, NoSuchAlgorithmException, KeyManagementException {
+    public static JSONObject httpsGet(String url,
+        Map<String, String> params) throws IOException, KeyStoreException, UnrecoverableKeyException, NoSuchAlgorithmException, KeyManagementException {
         HttpClient client = Tools.getHttpsClient();
         JSONObject jsonResult = null;
         //发送get请求
@@ -191,12 +188,13 @@ public class Tools {
     /**
      * 工具方法，发送一个http post请求，并尝试将响应转换为JSON
      *
-     * @param url    请求的方法名url
+     * @param url 请求的方法名url
      * @param params 参数表
      * @return 如果请求成功则返回JSON, 否则抛异常或者返回空
      * @throws IOException
      */
-    public static JSONObject httpsPost(String url, Map<String, String> params) throws IOException, UnrecoverableKeyException, NoSuchAlgorithmException, KeyStoreException, KeyManagementException {
+    public static JSONObject httpsPost(String url,
+        Map<String, String> params) throws IOException, UnrecoverableKeyException, NoSuchAlgorithmException, KeyStoreException, KeyManagementException {
         JSONObject jsonResult = null;
         //发送get请求
         HttpClient client = getHttpsClient();
@@ -213,5 +211,11 @@ public class Tools {
             jsonResult = JSON.parseObject(strResult);
         }
         return jsonResult;
+    }
+
+    public static void main(String[] args) {
+        JSONObject object = new JSONObject();
+        object.put("order", "true");//设置顺序发送的标记
+        System.out.println(object.toJSONString());
     }
 }
