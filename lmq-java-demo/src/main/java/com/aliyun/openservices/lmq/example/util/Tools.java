@@ -8,6 +8,7 @@ import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.HttpClient;
+import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
@@ -122,8 +123,9 @@ public class Tools {
         Registry<ConnectionSocketFactory> sfr = RegistryBuilder.<ConnectionSocketFactory>create()
             .register("http", PlainConnectionSocketFactory.INSTANCE)
             .register("https", scsf).build();
+        RequestConfig requestConfig = RequestConfig.custom().setConnectionRequestTimeout(1000).setConnectTimeout(5000).setSocketTimeout(5000).build();
         PoolingHttpClientConnectionManager pcm = new PoolingHttpClientConnectionManager(sfr);
-        httpClient = HttpClientBuilder.create().setConnectionManager(pcm).build();
+        httpClient = HttpClientBuilder.create().setConnectionManager(pcm).setDefaultRequestConfig(requestConfig).build();
         return httpClient;
     }
 
