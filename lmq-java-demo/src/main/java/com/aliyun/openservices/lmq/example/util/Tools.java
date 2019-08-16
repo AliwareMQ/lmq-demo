@@ -10,6 +10,7 @@ import org.apache.http.NameValuePair;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
+import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.utils.URLEncodedUtils;
@@ -19,6 +20,7 @@ import org.apache.http.conn.socket.ConnectionSocketFactory;
 import org.apache.http.conn.socket.PlainConnectionSocketFactory;
 import org.apache.http.conn.ssl.NoopHostnameVerifier;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
+import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.http.message.BasicNameValuePair;
@@ -95,9 +97,9 @@ public class Tools {
     /**
      * 创建HTTPS 客户端
      */
-    private static HttpClient httpClient = null;
+    private static CloseableHttpClient httpClient = null;
 
-    public static HttpClient getHttpsClient() throws KeyStoreException, UnrecoverableKeyException, NoSuchAlgorithmException, KeyManagementException {
+    public static CloseableHttpClient getHttpsClient() throws KeyStoreException, UnrecoverableKeyException, NoSuchAlgorithmException, KeyManagementException {
         if (httpClient != null) {
             return httpClient;
         }
@@ -129,33 +131,6 @@ public class Tools {
         return httpClient;
     }
 
-    public static HttpClient createHttpsClient() throws KeyManagementException, NoSuchAlgorithmException {
-        X509TrustManager xtm = new X509TrustManager() {
-            @Override
-            public void checkClientTrusted(X509Certificate[] arg0, String arg1)
-                throws CertificateException {
-            }
-
-            @Override
-            public void checkServerTrusted(X509Certificate[] arg0, String arg1)
-                throws CertificateException {
-            }
-
-            @Override
-            public X509Certificate[] getAcceptedIssuers() {
-                return new X509Certificate[] {};
-            }
-        };
-        SSLContext context = SSLContext.getInstance("TLS");
-        context.init(null, new TrustManager[] {xtm}, null);
-        SSLConnectionSocketFactory scsf = new SSLConnectionSocketFactory(context, NoopHostnameVerifier.INSTANCE);
-        Registry<ConnectionSocketFactory> sfr = RegistryBuilder.<ConnectionSocketFactory>create()
-            .register("http", PlainConnectionSocketFactory.INSTANCE)
-            .register("https", scsf).build();
-        PoolingHttpClientConnectionManager pcm = new PoolingHttpClientConnectionManager(sfr);
-        return HttpClientBuilder.create().setConnectionManager(pcm).build();
-    }
-
     /**
      * 发起Https Get请求，并得到返回的JSON响应
      *
@@ -170,7 +145,7 @@ public class Tools {
      */
     public static JSONObject httpsGet(String url,
         Map<String, String> params) throws IOException, KeyStoreException, UnrecoverableKeyException, NoSuchAlgorithmException, KeyManagementException {
-        HttpClient client = Tools.getHttpsClient();
+        CloseableHttpClient client = Tools.getHttpsClient();
         JSONObject jsonResult = null;
         //发送get请求
         List<NameValuePair> urlParameters = new ArrayList<NameValuePair>();
@@ -179,11 +154,19 @@ public class Tools {
         }
         String paramUrl = URLEncodedUtils.format(urlParameters, Charset.forName("UTF-8"));
         HttpGet request = new HttpGet(url + "?" + paramUrl);
-        HttpResponse response = client.execute(request);
-        if (response.getStatusLine().getStatusCode() == HttpStatus.SC_OK) {
-            String strResult = EntityUtils.toString(response.getEntity());
-            jsonResult = JSON.parseObject(strResult);
+        CloseableHttpResponse response = null;
+        try {
+            response = client.execute(request);
+            if (response.getStatusLine().getStatusCode() == HttpStatus.SC_OK) {
+                String strResult = EntityUtils.toString(response.getEntity());
+                jsonResult = JSON.parseObject(strResult);
+            }
+        } finally {
+            if (response != null) {
+                response.close();
+            }
         }
+
         return jsonResult;
     }
 
@@ -199,7 +182,7 @@ public class Tools {
         Map<String, String> params) throws IOException, UnrecoverableKeyException, NoSuchAlgorithmException, KeyStoreException, KeyManagementException {
         JSONObject jsonResult = null;
         //发送get请求
-        HttpClient client = getHttpsClient();
+        CloseableHttpClient client = getHttpsClient();
         HttpPost request = new HttpPost(url);
         List<NameValuePair> urlParameters = new ArrayList<NameValuePair>();
         for (Map.Entry<String, String> entry : params.entrySet()) {
@@ -207,10 +190,17 @@ public class Tools {
         }
         HttpEntity postParams = new UrlEncodedFormEntity(urlParameters);
         request.setEntity(postParams);
-        HttpResponse response = client.execute(request);
-        if (response.getStatusLine().getStatusCode() == HttpStatus.SC_OK) {
-            String strResult = EntityUtils.toString(response.getEntity());
-            jsonResult = JSON.parseObject(strResult);
+        CloseableHttpResponse response = null;
+        try {
+            response = client.execute(request);
+            if (response.getStatusLine().getStatusCode() == HttpStatus.SC_OK) {
+                String strResult = EntityUtils.toString(response.getEntity());
+                jsonResult = JSON.parseObject(strResult);
+            }
+        } finally {
+            if (response != null) {
+                response.close();
+            }
         }
         return jsonResult;
     }

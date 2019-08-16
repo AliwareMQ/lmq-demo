@@ -60,12 +60,12 @@ public class MQ4IoTSendMessageToMQ4IoTUseTokenMode {
         /**
          * 客户端使用的 token 内容，需要提前分配。实际业务中一般是有业务应用服务分配给移动终端。具体交互流程参考
          *  https://help.aliyun.com/document_detail/54226.html?spm=a2c4g.11186623.6.559.ca8a695aco5DF7
-         *  此处作为示意，在 MQ4IoT 客户端本地申请 token
+         *  此处作为示意，在 MQ4IoT 客户端本地申请 token， 实际使用时禁止在 MQTT 客户端程序申请 Token，以免引起 AccessKey，SecretKey 泄露，失去 token 的意义。
          */
         List<String> resource = new ArrayList<String>();
         resource.add(mq4IotTopic);
         /**
-         * 此处示意，申请一个小时有效期的 token
+         * 此处示意，申请一个小时有效期的 token,实际使用时禁止在 MQTT 客户端程序申请 Token，以免引起 AccessKey，SecretKey 泄露，失去 token 的意义。
          */
         String token = TokenApiDemo.applyToken(tokenServerUrl, accessKey, "XXXX", resource, "R,W", System.currentTimeMillis() + 3600 * 1000, instanceId);
         Map<String, String> tokenData = new HashMap<String, String>();
