@@ -47,8 +47,7 @@ public class MQ4IoTSendMessageToRocketMQ {
          * MQ4IoT 和 RocketMQ 配合使用时，RocketMQ 客户端仅操作一级 Topic。
          */
         final String parentTopic = "XXXXX";
-        Properties initProperties = new Properties();
-        Consumer consumer = ONSFactory.createConsumer(initProperties);
+        Consumer consumer = ONSFactory.createConsumer(properties);
         consumer.subscribe(parentTopic, "*", new MessageListener() {
             public Action consume(Message message, ConsumeContext consumeContext) {
                 System.out.println("recv msg:" + message);
