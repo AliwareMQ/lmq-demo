@@ -54,7 +54,7 @@ client.on_connect = on_connect
 client.on_message = on_message
 client.on_disconnect = on_disconnect
 ## username和 Password 签名模式下的设置方法，参考文档 https://help.aliyun.com/document_detail/48271.html?spm=a2c4g.11186623.6.553.217831c3BSFry7
-userName ='Signature'+'|'+accessKey+'|'+instanceId;
+userName ='Signature'+'|'+accessKey+'|'+instanceId
 password = base64.b64encode(hmac.new(secretKey.encode(), client_id.encode(), sha1).digest()).decode()
 client.username_pw_set(userName, password)
 # ssl设置，并且port=8883
