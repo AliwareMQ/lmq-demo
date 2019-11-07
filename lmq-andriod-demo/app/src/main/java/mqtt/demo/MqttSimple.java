@@ -7,6 +7,7 @@ import org.eclipse.paho.client.mqttv3.IMqttActionListener;
 import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken;
 import org.eclipse.paho.client.mqttv3.IMqttToken;
 import org.eclipse.paho.client.mqttv3.MqttCallback;
+import org.eclipse.paho.client.mqttv3.MqttCallbackExtended;
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
 import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
@@ -20,7 +21,13 @@ public class MqttSimple {
     }
 
     public void test() {
-        mqttAndroidClient.setCallback(new MqttCallback() {
+        mqttAndroidClient.setCallback(new MqttCallbackExtended() {
+            @Override
+            public void connectComplete(boolean reconnect, String serverURI) {
+                //when connect success ,need resub
+                subscribeToTopic();
+            }
+
             @Override
             public void connectionLost(Throwable cause) {
                 Log.e("close", "connectionLost", cause);
