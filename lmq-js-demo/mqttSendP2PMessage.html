@@ -33,6 +33,7 @@
                 timeout: 3,
                 onSuccess: onConnect,
                 mqttVersion: 4,
+                cleanSession: cleansession,
                 onFailure: function (message) {
                     setTimeout(MQTTconnect, reconnectTimeout);
                 }
