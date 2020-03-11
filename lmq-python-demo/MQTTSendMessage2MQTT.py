@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+#coding=utf-8
 import hmac
 import base64
 from hashlib import sha1
@@ -43,6 +44,12 @@ def on_log(client, userdata, level, buf):
     print('%s: %s' % (head, buf))
 def on_connect(client, userdata, flags, rc):
     print('Connected with result code ' + str(rc))
+    client.subscribe(topic, 0)
+    for i in range(1, 11):
+        print(i)
+        rc = client.publish(topic, str(i), qos=0)
+        print ('rc: %s' % rc)
+        time.sleep(0.1)
 def on_message(client, userdata, msg):
     print(msg.topic + ' ' + str(msg.payload))
 def on_disconnect(client, userdata, rc):
@@ -60,10 +67,4 @@ client.username_pw_set(userName, password)
 # ssl设置，并且port=8883
 #client.tls_set(ca_certs=None, certfile=None, keyfile=None, cert_reqs=ssl.CERT_REQUIRED, tls_version=ssl.PROTOCOL_TLS, ciphers=None)
 client.connect(brokerUrl, 1883, 60)
-client.subscribe(topic, 0)
-for i in range(1, 11):
-    print(i)
-    rc = client.publish(topic, str(i), qos=0)
-    print ('rc: %s' % rc)
-    time.sleep(0.1)
 client.loop_forever()
