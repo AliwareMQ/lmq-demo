@@ -50,8 +50,7 @@ public class RocketMQSendMessageToMQ4IoT {
          * MQ4IoT 和 RocketMQ 配合使用时，RocketMQ 客户端仅操作一级 Topic。
          */
         final String parentTopic = "XXXXX";
-        Properties initProperties = new Properties();
-        Producer producer = ONSFactory.createProducer(initProperties);
+        Producer producer = ONSFactory.createProducer(properties);
         producer.start();
         //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         /**
