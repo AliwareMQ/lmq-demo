@@ -9,13 +9,9 @@ import com.aliyun.openservices.ons.api.Message;
 import com.aliyun.openservices.ons.api.MessageListener;
 import com.aliyun.openservices.ons.api.ONSFactory;
 import com.aliyun.openservices.ons.api.PropertyKeyConst;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Properties;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
+import java.util.Set;
 
 public class MQTTClientStatusNoticeProcessDemo {
     public static void main(String[] args) {
@@ -26,7 +22,7 @@ public class MQTTClientStatusNoticeProcessDemo {
         /**
          * 设置 RocketMQ 客户端的 GroupID，注意此处的 groupId 和 MQ4IoT 实例中的 GroupId 是2个概念，请按照各自产品的说明申请填写
          */
-        properties.setProperty(PropertyKeyConst.GROUP_ID, "GID_XXXXX");
+        properties.setProperty(PropertyKeyConst.GROUP_ID, "GID_XXXX");
         /**
          * 账号 accesskey，从账号系统控制台获取
          */
@@ -38,39 +34,24 @@ public class MQTTClientStatusNoticeProcessDemo {
         /**
          * 设置 TCP 接入域名
          */
-        properties.put(PropertyKeyConst.NAMESRV_ADDR, "http://XXXXX");
+        properties.put(PropertyKeyConst.NAMESRV_ADDR, "http://XXXX");
         /**
          * 使用 RocketMQ 消费端来处理 MQTT 客户端的上下线通知时，订阅的 topic 为上下线通知 Topic，请遵循控制台文档提前创建。
          */
-        final String parentTopic = "GID_XXXXX_MQTT";
+        final String parentTopic = "GID_XXXX_MQTT";
         /**
-         * 客户端状态数据，实际生产环境中建议使用数据库或者 Redis等外部持久化存储来保存该信息，避免应用重启丢失状态
+         * 客户端状态数据，实际生产环境中建议使用数据库或者 Redis等外部持久化存储来保存该信息，避免应用重启丢失状态,本 demo 以单机内存版实现做演示
          */
-        final Map<String /*clientId*/, Map<String /*channelId*/, ClientStatus>> clientStatusMap = new ConcurrentHashMap<String, Map<String, ClientStatus>>();
+        MqttClientStatusStore mqttClientStatusStore = new MemoryHashMapStoreImpl();
         Consumer consumer = ONSFactory.createConsumer(properties);
-        consumer.subscribe(parentTopic, "*", new MqttClientStatusNoticeListener(clientStatusMap));
+        /**
+         *  此处仅处理客户端是否在线，因此只需要关注 connect 事件和 tcpclean 事件即可
+         */
+        consumer.subscribe(parentTopic, "connect||tcpclean", new MqttClientStatusNoticeListener(mqttClientStatusStore));
         consumer.start();
-        ScheduledExecutorService cleanService = new ScheduledThreadPoolExecutor(1);
-        cleanService.scheduleWithFixedDelay(new Runnable() {
-            @Override
-            public void run() {
-                /**
-                 * 清理掉部分只有很久之前(例如半小时)的 offline 状态的数据，这部分只有 offline 的数据可能由于应用部署或者MQTT 服务端运维导致上线状态异常
-                 */
-                for (Map<String, ClientStatus> channelMap : clientStatusMap.values()) {
-                    Iterator<Map.Entry<String, ClientStatus>> iterator = channelMap.entrySet().iterator();
-                    while (iterator.hasNext()) {
-                        Map.Entry<String, ClientStatus> entry = iterator.next();
-                        if (entry.getValue().getOfflineTime() != null && System.currentTimeMillis() - entry.getValue().getOfflineTime() > 1800 * 1000) {
-                            iterator.remove();
-                        }
-                    }
-                }
-            }
-        }, 10, 10, TimeUnit.MINUTES);
-        String clientId = "GID_XXXX@@@XXXXX";
+        String clientId = "GID_XXXXxXX@@@XXXXX";
         while (true) {
-            System.out.println("ClientStatus :" + checkClientOnline(clientId, clientStatusMap));
+            System.out.println("ClientStatus :" + checkClientOnline(clientId, mqttClientStatusStore));
             try {
                 Thread.sleep(1000);
             } catch (InterruptedException e) {
@@ -85,11 +66,11 @@ public class MQTTClientStatusNoticeProcessDemo {
      * 其次需要单独做消息幂等处理，以免重复接收消息导致状态机判断错误。
      */
     static class MqttClientStatusNoticeListener implements MessageListener {
-        private Map<String /*clientId*/, Map<String /*channelId*/, ClientStatus>> clientStatusMap;
+        private MqttClientStatusStore mqttClientStatusStore;
 
         public MqttClientStatusNoticeListener(
-            Map<String, Map<String, ClientStatus>> clientStatusMap) {
-            this.clientStatusMap = clientStatusMap;
+            MqttClientStatusStore mqttClientStatusStore) {
+            this.mqttClientStatusStore = mqttClientStatusStore;
         }
 
         @Override
@@ -100,50 +81,36 @@ public class MQTTClientStatusNoticeProcessDemo {
                 String eventType = msgBody.getString("eventType");
                 String clientId = msgBody.getString("clientId");
                 String channelId = msgBody.getString("channelId");
-                String clientIp = msgBody.getString("clientIp");
-                Long time = msgBody.getLong("time");
-                ClientStatus status = new ClientStatus();
-                status.setChannelId(channelId);
-                status.setClientIp(clientIp);
-                if ("connect".equals(eventType)) {
-                    status.setOnlineTime(time);
-                } else {
-                    status.setOfflineTime(time);
+                ClientStatusEvent event = new ClientStatusEvent();
+                event.setChannelId(channelId);
+                event.setClientIp(msgBody.getString("clientIp"));
+                event.setEventType(eventType);
+                event.setTime(msgBody.getLong("time"));
+                /**
+                 * 首先存储新的事件
+                 */
+                mqttClientStatusStore.addEvent(clientId, channelId, eventType, event);
+                /**
+                 * 读取当前 channel 的事件列表
+                 */
+                Set<ClientStatusEvent> events = mqttClientStatusStore.getEvent(clientId, channelId);
+                if (events == null || events.isEmpty()) {
+                    return Action.CommitMessage;
                 }
                 /**
-                 * 先检查是否有 channel 表
+                 * 如果事件列表里上线和下线事件都已经收到，则当前 channel 已经掉线，可以清理掉这个 channel 的数据
                  */
-                Map<String, ClientStatus> channelMap = new ConcurrentHashMap<>();
-                Map<String, ClientStatus> oldChannelMap = clientStatusMap.putIfAbsent(clientId, channelMap);
-                if (oldChannelMap != null) {
-                    channelMap = oldChannelMap;
+                boolean findOnlineEvent = false;
+                boolean findOfflineEvent = false;
+                for (ClientStatusEvent clientStatusEvent : events) {
+                    if (clientStatusEvent.isOnlineEvent()) {
+                        findOnlineEvent = true;
+                    } else {
+                        findOfflineEvent = true;
+                    }
                 }
-                synchronized (channelMap) {
-                    /**
-                     * 检查是否已经处理过当前 channel 的数据，如果没有，直接 put 数据即可
-                     */
-                    ClientStatus oldStatus = channelMap.putIfAbsent(channelId, status);
-                    if (oldStatus != null) {
-                        /**
-                         * 如果已经处理过当前 channel 的数据，则需要增量更新
-                         * 1.如果onlineTime 为空，说明之前没有收到过 connect 事件，则更新 online 状态
-                         * 2.如果offlineTime 为空，说明之前没有收到过 disconnect 或 close 事件，则更新 offline 状态
-                         */
-                        if (oldStatus.getOnlineTime() == null) {
-                            oldStatus.setOnlineTime(status.getOnlineTime());
-                        }
-                        if (oldStatus.getOfflineTime() == null) {
-                            oldStatus.setOfflineTime(status.getOfflineTime());
-                        }
-                        status = oldStatus;
-                    }
-                    /**
-                     * 对于同一个 channel 已经收集到 offline 和 online，则已经完整。可以清理状态机
-                     */
-                    if (status.getOfflineTime() != null && status.getOnlineTime() != null) {
-                        //close the channel
-                        channelMap.remove(channelId);
-                    }
+                if (findOnlineEvent && findOfflineEvent) {
+                    mqttClientStatusStore.deleteEvent(clientId, channelId);
                 }
                 return Action.CommitMessage;
             } catch (Throwable e) {
@@ -156,63 +123,34 @@ public class MQTTClientStatusNoticeProcessDemo {
     /**
      * 根据状态表判断一个 clientId 是否有活跃的 tcp 连接
      * 1.如果没有 channel 表，则一定不在线
-     * 2.如果 channel 表非空，检查一下 channel 数据中是否有未断开的 channel（offlineTime 为空）,如果有则代表有活跃连接，在线。
-     * 如果全部的 channel 都已断开则一定是不在线。
+     * 2.如果 channel 表非空，检查一下 channel 数据中是否仅包含上线事件,如果有则代表有活跃连接，在线。
+     * 如果全部的 channel 都有掉线断开事件则一定是不在线。
      *
      * @param clientId
-     * @param clientStatusMap
+     * @param mqttClientStatusStore
      * @return
      */
     public static boolean checkClientOnline(String clientId,
-        Map<String /*clientId*/, Map<String /*channelId*/, ClientStatus>> clientStatusMap) {
-        Map<String, ClientStatus> channelMap = clientStatusMap.get(clientId);
+        MqttClientStatusStore mqttClientStatusStore) {
+        Map<String, Set<ClientStatusEvent>> channelMap = mqttClientStatusStore.getEventsByClientId(clientId);
         if (channelMap == null) {
             return false;
         }
-        for (ClientStatus status : channelMap.values()) {
-            if (status.getOfflineTime() == null) {
+        for (Set<ClientStatusEvent> events : channelMap.values()) {
+            boolean findOnlineEvent = false;
+            boolean findOfflineEvent = false;
+            for (ClientStatusEvent event : events) {
+                if (event.isOnlineEvent()) {
+                    findOnlineEvent = true;
+                } else {
+                    findOfflineEvent = true;
+                }
+            }
+            if (findOnlineEvent & !findOfflineEvent) {
                 return true;
             }
         }
         return false;
     }
 
-    static class ClientStatus {
-        private String channelId;
-        private String clientIp;
-        private Long onlineTime;
-        private Long offlineTime;
-
-        public String getChannelId() {
-            return channelId;
-        }
-
-        public void setChannelId(String channelId) {
-            this.channelId = channelId;
-        }
-
-        public String getClientIp() {
-            return clientIp;
-        }
-
-        public void setClientIp(String clientIp) {
-            this.clientIp = clientIp;
-        }
-
-        public Long getOnlineTime() {
-            return onlineTime;
-        }
-
-        public void setOnlineTime(Long onlineTime) {
-            this.onlineTime = onlineTime;
-        }
-
-        public Long getOfflineTime() {
-            return offlineTime;
-        }
-
-        public void setOfflineTime(Long offlineTime) {
-            this.offlineTime = offlineTime;
-        }
-    }
 }
